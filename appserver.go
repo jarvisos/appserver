@@ -23,6 +23,35 @@
 
 package main
 
-func main() {
+import (
+	"fmt"
+	"net"
+	"net/rpc"
+)
 
+type AppServer struct{}
+
+func main() {
+	appServer := AppServer{}
+	rpc.Register(&appServer)
+
+	// Listen on the specified port
+	l, err := net.Listen("tcp", "localhost:7491")
+	if err != nil {
+		fmt.Printf("Error initializing app server on port 7491: %v\n", err)
+		return
+	}
+
+	// Listen for calls
+	rpc.Accept(l)
+
+}
+
+func (app *AppServer) DirectCall(call string, result *[]byte) error {
+	fmt.Printf("Direct Call: %v\n", call)
+
+	str := []byte("Success")
+	result = &str
+
+	return nil
 }
