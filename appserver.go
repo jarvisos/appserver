@@ -25,8 +25,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/jarvisos/appserver/appclient"
 	"net"
 	"net/rpc"
+	"os/exec"
+	"strings"
+	"time"
 )
 
 type AppServer struct{}
@@ -42,6 +46,8 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Listening on port 7491\n")
+
 	// Listen for calls
 	rpc.Accept(l)
 
@@ -49,6 +55,29 @@ func main() {
 
 func (app *AppServer) DirectCall(call string, result *[]byte) error {
 	fmt.Printf("Direct Call: %v\n", call)
+
+	parts := strings.Split(call, " ")
+	command := exec.Command(parts[0], "-p=7492")
+	error := command.Start()
+	if error != nil {
+		fmt.Printf("Error starting app: %v\n", error)
+		return error
+	}
+
+	time.Sleep(time.Second)
+	time.Sleep(time.Second)
+
+	clientApp, err := appclient.NewClient("localhost:7492", time.Second)
+	if err != nil {
+		fmt.Printf("Error connecting to app: %v\n", err)
+		return err
+	}
+
+	result, err = clientApp.Call("test")
+	if err != nil {
+		fmt.Printf("Error calling function for client app: %v\n", err)
+		return err
+	}
 
 	str := []byte("Success")
 	result = &str
