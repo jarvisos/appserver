@@ -25,7 +25,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/jarvisos/appserver/appclient"
+	"github.com/jarvisos/app/nlpclient"
+	"github.com/jarvisos/appserver/portcontrol"
 	"net"
 	"net/rpc"
 	"os/exec"
@@ -56,20 +57,28 @@ func main() {
 func (app *AppServer) DirectCall(call string, result *[]byte) error {
 	fmt.Printf("Direct Call: %v\n", call)
 
-	parts := strings.Split(call, " ")
-	command := exec.Command(parts[0], "-p=7492")
+	port, err := portcontrol.Generate()
+	if err != nil {
+		fmt.Printf("Could not generate a port: %v\n", err)
+		return err
+	}
+
+	parts := strings.Split(strings.Trim(call, " \n"), " ")
+	command := exec.Command(parts[0], "-p="+string(port))
 	error := command.Start()
 	if error != nil {
-		fmt.Printf("Error starting app: %v\n", error)
+		fmt.Printf("Error starting '%s -p=%s': %v\n", parts[0], string(port), error)
+		portcontrol.Free(port)
 		return error
 	}
 
 	time.Sleep(time.Second)
 	time.Sleep(time.Second)
 
-	clientApp, err := appclient.NewClient("localhost:7492", time.Second)
+	clientApp, err := nlpclient.NewClient("localhost:"+string(port), time.Second)
 	if err != nil {
 		fmt.Printf("Error connecting to app: %v\n", err)
+		portcontrol.Free(port)
 		return err
 	}
 
@@ -81,6 +90,8 @@ func (app *AppServer) DirectCall(call string, result *[]byte) error {
 
 	str := []byte("Success")
 	result = &str
+
+	portcontrol.Free(port)
 
 	return nil
 }

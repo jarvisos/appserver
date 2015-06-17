@@ -16,12 +16,12 @@
    You should have received a copy of the GNU General Public License
    along with jarvisos.  If not, see <http://www.gnu.org/licenses/>.
 
-   File: appclient.go
+   File: app.go
    Author: W. Max Lees <max.lees@gmail.com>
-   Date: 06.15.2015
+   Date: 06.14.2015
 */
 
-package appclient
+package nlpclient
 
 import (
 	"net"
@@ -29,26 +29,20 @@ import (
 	"time"
 )
 
-type AppClient struct {
+type AppServerClient struct {
 	connection *rpc.Client
 }
 
-func (c *AppClient) Call(call string) (*[]byte, error) {
+func (c *AppServerClient) DirectCall(call string) (*[]byte, error) {
 	var result *[]byte
-	err := c.connection.Call("App.Call", call, &result)
+	err := c.connection.Call("AppServer.DirectCall", call, &result)
 	return result, err
 }
 
-func (c *AppClient) Who(full bool) (*[]byte, error) {
-	var result *[]byte
-	err := c.connection.Call("App.Who", full, &result)
-	return result, err
-}
-
-func NewClient(dsn string, timeout time.Duration) (*AppClient, error) {
+func NewClient(dsn string, timeout time.Duration) (*AppServerClient, error) {
 	connection, err := net.DialTimeout("tcp", dsn, timeout)
 	if err != nil {
 		return nil, err
 	}
-	return &AppClient{connection: rpc.NewClient(connection)}, nil
+	return &AppServerClient{connection: rpc.NewClient(connection)}, nil
 }
